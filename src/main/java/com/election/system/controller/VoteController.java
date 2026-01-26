@@ -30,10 +30,19 @@ public class VoteController {
     public Result<String> submitVote(@RequestBody Map<String, Long> voteData, HttpServletRequest request) {
         // 从Token中获取用户ID
         String token = getTokenFromRequest(request);
+        if (token == null) {
+            return Result.error("未授权");
+        }
         Long userId = jwtUtil.getUserIdFromToken(token);
+        if (userId == null) {
+            return Result.error("无效的Token");
+        }
 
         Long electionId = voteData.get("electionId");
         Long candidateId = voteData.get("candidateId");
+        if (electionId == null || candidateId == null) {
+            return Result.error("参数不完整");
+        }
         String ipAddress = getClientIP(request);
 
         boolean success = voteService.submitVote(electionId, candidateId, userId, ipAddress);
@@ -66,7 +75,13 @@ public class VoteController {
             HttpServletRequest request) {
         // 从Token中获取用户ID
         String token = getTokenFromRequest(request);
+        if (token == null) {
+            return Result.error("未授权");
+        }
         Long userId = jwtUtil.getUserIdFromToken(token);
+        if (userId == null) {
+            return Result.error("无效的Token");
+        }
 
         List<Map<String, Object>> votes = voteService.getMyVotes(userId, electionId);
         return Result.success(votes);

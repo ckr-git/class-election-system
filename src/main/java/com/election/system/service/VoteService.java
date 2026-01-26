@@ -75,12 +75,8 @@ public class VoteService {
         voteRecord.setIpAddress(ipAddress);
 
         if (voteRecordMapper.insert(voteRecord) > 0) {
-            // 更新候选人票数
-            Candidate candidate = candidateMapper.selectById(candidateId);
-            if (candidate != null) {
-                candidate.setVoteCount(candidate.getVoteCount() + 1);
-                candidateMapper.updateById(candidate);
-            }
+            // 原子更新候选人票数，避免并发问题
+            candidateMapper.incrementVoteCount(candidateId);
             return true;
         }
 

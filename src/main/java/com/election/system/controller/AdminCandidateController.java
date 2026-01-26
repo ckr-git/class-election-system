@@ -38,10 +38,13 @@ public class AdminCandidateController {
      */
     @PostMapping("/review")
     public Result<String> reviewCandidate(@RequestBody Map<String, Object> data) {
+        if (data.get("candidateId") == null || data.get("status") == null) {
+            return Result.error("参数不完整");
+        }
         Long candidateId = Long.valueOf(data.get("candidateId").toString());
         Integer status = Integer.valueOf(data.get("status").toString());
-        String reviewOpinion = data.get("reviewOpinion").toString();
-        
+        String reviewOpinion = data.get("reviewOpinion") != null ? data.get("reviewOpinion").toString() : "";
+
         boolean success = adminCandidateService.reviewCandidate(candidateId, status, reviewOpinion);
         if (success) {
             return Result.success("审核成功");

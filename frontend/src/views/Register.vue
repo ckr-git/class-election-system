@@ -75,6 +75,7 @@ export default {
             this.$router.push('/login')
           } catch (error) {
             console.error(error)
+            this.$message.error(error.response?.data?.message || '注册失败，请稍后重试')
           } finally {
             this.loading = false
           }

@@ -42,8 +42,12 @@ public class CandidateService {
             return false;
         }
 
+        // 检查报名时间（处理null情况）
         LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(election.getApplyStartTime()) || now.isAfter(election.getApplyEndTime())) {
+        if (election.getApplyStartTime() != null && now.isBefore(election.getApplyStartTime())) {
+            return false;
+        }
+        if (election.getApplyEndTime() != null && now.isAfter(election.getApplyEndTime())) {
             return false;
         }
 

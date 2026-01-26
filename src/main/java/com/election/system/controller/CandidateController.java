@@ -31,7 +31,13 @@ public class CandidateController {
     public Result<String> apply(@RequestBody Candidate candidate, HttpServletRequest request) {
         // 从Token中获取用户ID
         String token = getTokenFromRequest(request);
+        if (token == null) {
+            return Result.error("未授权");
+        }
         Long userId = jwtUtil.getUserIdFromToken(token);
+        if (userId == null) {
+            return Result.error("无效的Token");
+        }
 
         boolean success = candidateService.apply(candidate, userId);
         if (success) {

@@ -71,6 +71,7 @@ export default {
             }
           } catch (error) {
             console.error(error)
+            this.$message.error(error.response?.data?.message || '登录失败，请检查用户名和密码')
           } finally {
             this.loading = false
           }

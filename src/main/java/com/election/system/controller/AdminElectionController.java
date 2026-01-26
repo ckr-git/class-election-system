@@ -44,8 +44,14 @@ public class AdminElectionController {
     @PostMapping("/create")
     public Result<String> createElection(@RequestBody Election election, HttpServletRequest request) {
         String token = getTokenFromRequest(request);
+        if (token == null) {
+            return Result.error("未授权");
+        }
         Long creatorId = jwtUtil.getUserIdFromToken(token);
-        
+        if (creatorId == null) {
+            return Result.error("无效的Token");
+        }
+
         boolean success = adminElectionService.createElection(election, creatorId);
         if (success) {
             return Result.success("创建成功");
@@ -85,9 +91,12 @@ public class AdminElectionController {
      */
     @PostMapping("/change-status")
     public Result<String> changeElectionStatus(@RequestBody Map<String, Object> data) {
+        if (data.get("electionId") == null || data.get("status") == null) {
+            return Result.error("参数不完整");
+        }
         Long electionId = Long.valueOf(data.get("electionId").toString());
         Integer status = Integer.valueOf(data.get("status").toString());
-        
+
         boolean success = adminElectionService.changeElectionStatus(electionId, status);
         if (success) {
             return Result.success("状态更新成功");

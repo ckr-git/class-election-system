@@ -75,8 +75,14 @@ public class JwtUtil {
      * 从Token中获取用户ID
      */
     public Long getUserIdFromToken(String token) {
+        if (token == null) {
+            return null;
+        }
         Claims claims = getClaimsFromToken(token);
-        return claims != null ? Long.valueOf(claims.get("userId").toString()) : null;
+        if (claims == null || claims.get("userId") == null) {
+            return null;
+        }
+        return Long.valueOf(claims.get("userId").toString());
     }
 
     /**
