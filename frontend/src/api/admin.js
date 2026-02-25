@@ -125,3 +125,15 @@ export function getElectionVoteStats(electionId) {
     method: 'get'
   })
 }
+
+// ========== 批量导入 ==========
+export function importUsers(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request({
+    url: '/admin/user/import',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

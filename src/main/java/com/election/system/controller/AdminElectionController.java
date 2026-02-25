@@ -32,9 +32,10 @@ public class AdminElectionController {
     @GetMapping("/list")
     public Result<Page<Election>> getElectionList(
             @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") Integer current,
             @RequestParam(defaultValue = "10") Integer size) {
-        Page<Election> page = adminElectionService.getElectionList(status, current, size);
+        Page<Election> page = adminElectionService.getElectionList(status, keyword, current, size);
         return Result.success(page);
     }
 

@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.election.system.entity.Candidate;
 import com.election.system.entity.Election;
 import com.election.system.entity.VoteRecord;
+import com.election.system.entity.User;
 import com.election.system.mapper.CandidateMapper;
 import com.election.system.mapper.ElectionMapper;
+import com.election.system.mapper.UserMapper;
 import com.election.system.mapper.VoteRecordMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,9 @@ public class VoteService {
 
     @Autowired
     private CandidateMapper candidateMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private ElectionMapper electionMapper;
@@ -110,6 +115,10 @@ public class VoteService {
             map.put("positionId", candidate.getPositionId());
             map.put("userId", candidate.getUserId());
             map.put("voteCount", candidate.getVoteCount());
+            User user = userMapper.selectById(candidate.getUserId());
+            if (user != null) {
+                map.put("nickname", user.getNickname());
+            }
             return map;
         }).collect(Collectors.toList());
 
@@ -152,5 +161,23 @@ public class VoteService {
 
             return map;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * 获取用户在某选举中的已投票数
+     */
+    public Map<String, Object> getVoteCount(Long electionId, Long userId) {
+        LambdaQueryWrapper<VoteRecord> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(VoteRecord::getElectionId, electionId)
+                .eq(VoteRecord::getVoterId, userId);
+        Long votedCount = voteRecordMapper.selectCount(queryWrapper);
+
+        Election election = electionMapper.selectById(electionId);
+        Integer voteLimit = (election != null) ? election.getVoteLimit() : 1;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("votedCount", votedCount);
+        result.put("voteLimit", voteLimit);
+        return result;
     }
 }

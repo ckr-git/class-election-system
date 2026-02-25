@@ -16,7 +16,12 @@
             <el-tag v-else type="danger">已拒绝</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="reviewOpinion" label="审核意见" />
+        <el-table-column prop="reviewOpinion" label="审核意见" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span v-if="scope.row.reviewOpinion">{{ scope.row.reviewOpinion }}</span>
+            <span v-else style="color: #C0C4CC;">暂无</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="createTime" label="申请时间" width="160" />
       </el-table>
 

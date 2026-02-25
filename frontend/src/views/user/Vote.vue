@@ -5,7 +5,12 @@
         <span>在线投票 - {{ election.title }}</span>
       </div>
 
-      <el-alert v-if="hasVoted" title="您已完成投票" type="success" show-icon :closable="false" style="margin-bottom: 20px;" />
+      <div v-if="voteInfo" style="margin-bottom: 15px;">
+        <el-alert
+          :title="`已投 ${voteInfo.votedCount} / 共可投 ${voteInfo.voteLimit} 票`"
+          :type="voteInfo.votedCount >= voteInfo.voteLimit ? 'success' : 'info'"
+          show-icon :closable="false" />
+      </div>
 
       <el-table :data="candidates" border>
         <el-table-column prop="nickname" label="候选人" width="120" />
@@ -31,7 +36,7 @@
 <script>
 import { getElectionDetail } from '@/api/election'
 import { getCandidateList } from '@/api/candidate'
-import { submitVote, getMyVotes } from '@/api/vote'
+import { submitVote, getMyVotes, getVoteCount } from '@/api/vote'
 
 export default {
   name: 'Vote',
@@ -41,7 +46,8 @@ export default {
       election: {},
       candidates: [],
       hasVoted: false,
-      votedIds: []
+      votedIds: [],
+      voteInfo: null
     }
   },
   mounted() {
@@ -54,6 +60,7 @@ export default {
     async loadData() {
       await this.loadElection()
       await this.loadCandidates()
+      await this.loadVoteCount()
       await this.checkVoted()
     },
     async loadElection() {
@@ -72,12 +79,21 @@ export default {
         console.error(e)
       }
     },
+    async loadVoteCount() {
+      try {
+        const res = await getVoteCount({ electionId: this.electionId })
+        this.voteInfo = res.data
+      } catch (e) {
+        console.error(e)
+      }
+    },
     async checkVoted() {
       try {
         const res = await getMyVotes({ electionId: this.electionId })
         if (res.data && res.data.length > 0) {
           this.votedIds = res.data.map(v => v.candidateId)
-          this.hasVoted = this.votedIds.length >= (this.election.voteLimit || 1)
+          const limit = this.voteInfo ? this.voteInfo.voteLimit : (this.election.voteLimit || 1)
+          this.hasVoted = this.votedIds.length >= limit
         }
       } catch (e) {
         console.error(e)
@@ -92,7 +108,13 @@ export default {
         })
         if (res.code === 200) {
           this.$message.success('投票成功')
-          this.loadData()
+          await this.loadVoteCount()
+          await this.checkVoted()
+          await this.loadCandidates()
+          // 投满后自动跳转结果页
+          if (this.voteInfo && this.voteInfo.votedCount >= this.voteInfo.voteLimit) {
+            this.$router.push({ path: '/results', query: { electionId: this.electionId } })
+          }
         } else {
           this.$message.error(res.message)
         }

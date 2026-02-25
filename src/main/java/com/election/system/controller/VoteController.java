@@ -88,6 +88,26 @@ public class VoteController {
     }
 
     /**
+     * 获取用户在某选举中的已投票数
+     */
+    @GetMapping("/count")
+    public Result<Map<String, Object>> getVoteCount(
+            @RequestParam Long electionId,
+            HttpServletRequest request) {
+        String token = getTokenFromRequest(request);
+        if (token == null) {
+            return Result.error("未授权");
+        }
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        if (userId == null) {
+            return Result.error("无效的Token");
+        }
+
+        Map<String, Object> result = voteService.getVoteCount(electionId, userId);
+        return Result.success(result);
+    }
+
+    /**
      * 从请求头中获取Token
      */
     private String getTokenFromRequest(HttpServletRequest request) {

@@ -7,7 +7,9 @@ import com.election.system.service.AdminUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -100,6 +102,22 @@ public class AdminUserController {
             return Result.success("操作成功");
         } else {
             return Result.error("操作失败");
+        }
+    }
+
+    /**
+     * 批量导入用户
+     */
+    @PostMapping("/import")
+    public Result<Map<String, Object>> importUsers(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error("请选择文件");
+        }
+        try {
+            Map<String, Object> result = adminUserService.importUsers(file);
+            return Result.success(result);
+        } catch (IOException e) {
+            return Result.error("文件读取失败: " + e.getMessage());
         }
     }
 }

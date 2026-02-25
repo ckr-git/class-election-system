@@ -25,3 +25,12 @@ export function getMyVotes(params) {
     params
   })
 }
+
+// 获取已投票数
+export function getVoteCount(params) {
+  return request({
+    url: '/vote/count',
+    method: 'get',
+    params
+  })
+}

@@ -2,6 +2,7 @@ package com.election.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.election.system.common.XssUtil;
 import com.election.system.entity.Candidate;
 import com.election.system.entity.User;
 import com.election.system.mapper.CandidateMapper;
@@ -9,9 +10,8 @@ import com.election.system.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -43,11 +43,21 @@ public class AdminCandidateService {
 
         Page<Candidate> candidatePage = candidateMapper.selectPage(page, queryWrapper);
 
-        // 组装候选人信息
         Page<Map<String, Object>> resultPage = new Page<>(current, size);
         resultPage.setTotal(candidatePage.getTotal());
 
-        List<Map<String, Object>> records = candidatePage.getRecords().stream().map(candidate -> {
+        List<Candidate> candidates = candidatePage.getRecords();
+        if (candidates.isEmpty()) {
+            resultPage.setRecords(Collections.emptyList());
+            return resultPage;
+        }
+
+        // 批量查询用户，避免N+1
+        Set<Long> userIds = candidates.stream().map(Candidate::getUserId).collect(Collectors.toSet());
+        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        List<Map<String, Object>> records = candidates.stream().map(candidate -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", candidate.getId());
             map.put("electionId", candidate.getElectionId());
@@ -61,8 +71,7 @@ public class AdminCandidateService {
             map.put("reviewOpinion", candidate.getReviewOpinion());
             map.put("createTime", candidate.getCreateTime());
 
-            // 获取用户信息
-            User user = userMapper.selectById(candidate.getUserId());
+            User user = userMap.get(candidate.getUserId());
             if (user != null) {
                 map.put("username", user.getUsername());
                 map.put("nickname", user.getNickname());
@@ -84,10 +93,18 @@ public class AdminCandidateService {
         if (candidate == null) {
             return false;
         }
-        
+        // 只能审核待审核状态的候选人
+        if (candidate.getStatus() != 0) {
+            return false;
+        }
+        // 只允许通过(1)或拒绝(2)
+        if (status != 1 && status != 2) {
+            return false;
+        }
+
         candidate.setStatus(status);
-        candidate.setReviewOpinion(reviewOpinion);
-        
+        candidate.setReviewOpinion(XssUtil.clean(reviewOpinion));
+
         return candidateMapper.updateById(candidate) > 0;
     }
 

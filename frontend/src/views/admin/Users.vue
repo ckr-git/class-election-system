@@ -3,9 +3,20 @@
     <el-card>
       <div slot="header">
         <span>用户管理</span>
-        <el-button style="float: right;" type="primary" size="small" @click="dialogVisible = true">
-          新增用户
-        </el-button>
+        <div style="float: right;">
+          <el-button type="success" size="small" @click="importDialogVisible = true">批量导入</el-button>
+          <el-button type="primary" size="small" @click="showCreateDialog">新增用户</el-button>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+        <el-input v-model="searchKeyword" placeholder="搜索学号/姓名" size="small" style="width: 200px;"
+          clearable @clear="handleSearch" @keyup.enter.native="handleSearch" />
+        <el-select v-model="searchRole" placeholder="角色筛选" size="small" style="width: 120px;" clearable @change="handleSearch">
+          <el-option label="学生" value="STUDENT" />
+          <el-option label="管理员" value="ADMIN" />
+        </el-select>
+        <el-button size="small" type="primary" @click="handleSearch">搜索</el-button>
       </div>
 
       <el-table :data="users" border>
@@ -23,14 +34,14 @@
             <el-tag v-else type="danger">禁用</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template slot-scope="scope">{{ formatTime(scope.row.createTime) }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="250">
           <template slot-scope="scope">
             <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="small" type="warning" @click="handleResetPassword(scope.row)">
-              重置密码
-            </el-button>
-            <el-button size="small" :type="scope.row.status === 1 ? 'danger' : 'success'" 
+            <el-button size="small" type="warning" @click="handleResetPassword(scope.row)">重置密码</el-button>
+            <el-button size="small" :type="scope.row.status === 1 ? 'danger' : 'success'"
                        @click="handleToggleStatus(scope.row)">
               {{ scope.row.status === 1 ? '禁用' : '启用' }}
             </el-button>
@@ -49,15 +60,15 @@
     </el-card>
 
     <!-- 新增/编辑对话框 -->
-    <el-dialog :visible.sync="dialogVisible" title="用户信息" width="500px">
+    <el-dialog :visible.sync="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="500px" @close="resetForm">
       <el-form :model="form" label-width="80px">
         <el-form-item label="学号">
-          <el-input v-model="form.username"></el-input>
+          <el-input v-model="form.username" :disabled="isEdit"></el-input>
         </el-form-item>
         <el-form-item label="姓名">
           <el-input v-model="form.nickname"></el-input>
         </el-form-item>
-        <el-form-item label="密码">
+        <el-form-item label="密码" v-if="!isEdit">
           <el-input v-model="form.password" type="password"></el-input>
         </el-form-item>
         <el-form-item label="角色">
@@ -72,29 +83,54 @@
         <el-button type="primary" @click="handleSave">确定</el-button>
       </div>
     </el-dialog>
+
+    <!-- 批量导入对话框 -->
+    <el-dialog title="批量导入用户" :visible.sync="importDialogVisible" width="500px">
+      <div style="margin-bottom: 15px; color: #909399; font-size: 13px;">
+        Excel格式：学号、姓名、班级ID、手机号、邮箱。默认密码为学号后6位。
+      </div>
+      <el-upload
+        ref="importUpload"
+        action=""
+        :auto-upload="false"
+        :limit="1"
+        accept=".xlsx,.xls"
+        :on-change="handleFileChange">
+        <el-button size="small" type="primary">选择文件</el-button>
+      </el-upload>
+      <div v-if="importResult" style="margin-top: 15px;">
+        <el-alert :title="`导入完成：成功 ${importResult.successCount} 条，失败 ${importResult.failCount} 条`"
+          :type="importResult.failCount > 0 ? 'warning' : 'success'" show-icon :closable="false" />
+        <div v-if="importResult.failDetails && importResult.failDetails.length > 0" style="margin-top: 10px; max-height: 150px; overflow-y: auto;">
+          <p v-for="(detail, idx) in importResult.failDetails" :key="idx" style="color: #F56C6C; font-size: 12px; margin: 4px 0;">{{ detail }}</p>
+        </div>
+      </div>
+      <div slot="footer">
+        <el-button @click="importDialogVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="importing" @click="handleImport">开始导入</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getUserList, createUser, updateUser, resetPassword, toggleUserStatus } from '@/api/admin'
+import { getUserList, createUser, updateUser, resetPassword, toggleUserStatus, importUsers } from '@/api/admin'
 
 export default {
   name: 'Users',
   data() {
     return {
       users: [],
-      page: {
-        current: 1,
-        size: 10,
-        total: 0
-      },
+      page: { current: 1, size: 10, total: 0 },
       dialogVisible: false,
-      form: {
-        username: '',
-        nickname: '',
-        password: '',
-        role: 'STUDENT'
-      }
+      isEdit: false,
+      searchKeyword: '',
+      searchRole: '',
+      form: { username: '', nickname: '', password: '', role: 'STUDENT' },
+      importDialogVisible: false,
+      importFile: null,
+      importResult: null,
+      importing: false
     }
   },
   mounted() {
@@ -103,28 +139,43 @@ export default {
   methods: {
     async loadUsers() {
       try {
-        const res = await getUserList({
-          current: this.page.current,
-          size: this.page.size
-        })
+        const params = { current: this.page.current, size: this.page.size }
+        if (this.searchKeyword) params.username = this.searchKeyword
+        if (this.searchRole) params.role = this.searchRole
+        const res = await getUserList(params)
         this.users = res.data.records
         this.page.total = res.data.total
       } catch (error) {
         console.error(error)
       }
     },
+    handleSearch() {
+      this.page.current = 1
+      this.loadUsers()
+    },
     handlePageChange(page) {
       this.page.current = page
       this.loadUsers()
     },
-    handleEdit(row) {
-      this.form = { ...row }
+    showCreateDialog() {
+      this.isEdit = false
+      this.form = { username: '', nickname: '', password: '', role: 'STUDENT' }
       this.dialogVisible = true
+    },
+    handleEdit(row) {
+      this.isEdit = true
+      this.form = { id: row.id, username: row.username, nickname: row.nickname, role: row.role }
+      this.dialogVisible = true
+    },
+    resetForm() {
+      this.form = { username: '', nickname: '', password: '', role: 'STUDENT' }
+      this.isEdit = false
     },
     async handleSave() {
       try {
-        if (this.form.id) {
-          await updateUser(this.form)
+        if (this.isEdit) {
+          const data = { id: this.form.id, nickname: this.form.nickname, role: this.form.role }
+          await updateUser(data)
         } else {
           await createUser(this.form)
         }
@@ -152,6 +203,30 @@ export default {
       } catch (error) {
         console.error(error)
       }
+    },
+    handleFileChange(file) {
+      this.importFile = file.raw
+      this.importResult = null
+    },
+    async handleImport() {
+      if (!this.importFile) {
+        this.$message.warning('请先选择文件')
+        return
+      }
+      this.importing = true
+      try {
+        const res = await importUsers(this.importFile)
+        this.importResult = res.data
+        this.loadUsers()
+      } catch (e) {
+        this.$message.error('导入失败')
+      } finally {
+        this.importing = false
+      }
+    },
+    formatTime(time) {
+      if (!time) return ''
+      return time.replace('T', ' ').substring(0, 16)
     }
   }
 }

@@ -2,6 +2,7 @@ package com.election.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.election.system.common.XssUtil;
 import com.election.system.entity.Candidate;
 import com.election.system.entity.Election;
 import com.election.system.entity.User;
@@ -12,9 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -65,32 +65,55 @@ public class CandidateService {
         candidate.setStatus(0); // 待审核
         candidate.setVoteCount(0);
 
+        // XSS过滤
+        candidate.setSlogan(XssUtil.clean(candidate.getSlogan()));
+        candidate.setIntro(XssUtil.clean(candidate.getIntro()));
+        candidate.setAchievements(XssUtil.clean(candidate.getAchievements()));
+
         return candidateMapper.insert(candidate) > 0;
     }
 
     /**
      * 获取候选人列表（分页）
      */
-    public Page<Map<String, Object>> getCandidateList(Long electionId, Long positionId, Integer current, Integer size) {
+    public Page<Map<String, Object>> getCandidateList(Long electionId, Long positionId, Long userId, Integer current, Integer size) {
         Page<Candidate> page = new Page<>(current, size);
         LambdaQueryWrapper<Candidate> queryWrapper = new LambdaQueryWrapper<>();
-        
+
         if (electionId != null) {
             queryWrapper.eq(Candidate::getElectionId, electionId);
         }
         if (positionId != null) {
             queryWrapper.eq(Candidate::getPositionId, positionId);
         }
-        queryWrapper.eq(Candidate::getStatus, 1); // 只显示审核通过的
+        if (userId != null) {
+            queryWrapper.eq(Candidate::getUserId, userId);
+        } else {
+            queryWrapper.eq(Candidate::getStatus, 1); // 无userId时只显示审核通过的
+        }
         queryWrapper.orderByDesc(Candidate::getVoteCount);
 
         Page<Candidate> candidatePage = candidateMapper.selectPage(page, queryWrapper);
 
-        // 组装候选人信息（包含用户信息）
+        // 批量查询用户和选举，避免N+1
         Page<Map<String, Object>> resultPage = new Page<>(current, size);
         resultPage.setTotal(candidatePage.getTotal());
 
-        List<Map<String, Object>> records = candidatePage.getRecords().stream().map(candidate -> {
+        List<Candidate> candidates = candidatePage.getRecords();
+        if (candidates.isEmpty()) {
+            resultPage.setRecords(Collections.emptyList());
+            return resultPage;
+        }
+
+        Set<Long> userIds = candidates.stream().map(Candidate::getUserId).collect(Collectors.toSet());
+        Set<Long> electionIds = candidates.stream().map(Candidate::getElectionId).collect(Collectors.toSet());
+
+        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        Map<Long, Election> electionMap = electionMapper.selectBatchIds(electionIds).stream()
+                .collect(Collectors.toMap(Election::getId, Function.identity()));
+
+        List<Map<String, Object>> records = candidates.stream().map(candidate -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", candidate.getId());
             map.put("electionId", candidate.getElectionId());
@@ -100,9 +123,16 @@ public class CandidateService {
             map.put("achievements", candidate.getAchievements());
             map.put("photo", candidate.getPhoto());
             map.put("voteCount", candidate.getVoteCount());
+            map.put("status", candidate.getStatus());
+            map.put("reviewOpinion", candidate.getReviewOpinion());
+            map.put("createTime", candidate.getCreateTime());
 
-            // 获取用户信息
-            User user = userMapper.selectById(candidate.getUserId());
+            Election election = electionMap.get(candidate.getElectionId());
+            if (election != null) {
+                map.put("electionTitle", election.getTitle());
+            }
+
+            User user = userMap.get(candidate.getUserId());
             if (user != null) {
                 map.put("username", user.getUsername());
                 map.put("nickname", user.getNickname());

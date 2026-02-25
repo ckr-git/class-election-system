@@ -54,9 +54,23 @@ public class CandidateController {
     public Result<Page<Map<String, Object>>> getCandidateList(
             @RequestParam(required = false) Long electionId,
             @RequestParam(required = false) Long positionId,
+            @RequestParam(required = false) Long userId,
             @RequestParam(defaultValue = "1") Integer current,
-            @RequestParam(defaultValue = "10") Integer size) {
-        Page<Map<String, Object>> page = candidateService.getCandidateList(electionId, positionId, current, size);
+            @RequestParam(defaultValue = "10") Integer size,
+            HttpServletRequest request) {
+        // IDOR防护：非管理员只能查自己的申请
+        if (userId != null) {
+            String token = getTokenFromRequest(request);
+            if (token == null) {
+                return Result.error("未授权");
+            }
+            Long currentUserId = jwtUtil.getUserIdFromToken(token);
+            String role = jwtUtil.getRoleFromToken(token);
+            if (!"ADMIN".equals(role) && (currentUserId == null || !currentUserId.equals(userId))) {
+                return Result.error(403, "无权查询其他用户申请");
+            }
+        }
+        Page<Map<String, Object>> page = candidateService.getCandidateList(electionId, positionId, userId, current, size);
         return Result.success(page);
     }
 
