@@ -1,0 +1,136 @@
+{
+  "project": {
+    "name": "班级干部评选系统",
+    "stack": "Spring Boot 2.7.18 + Vue 2 + Element UI + MyBatis-Plus + MySQL + Redis + JWT",
+    "arch": "fullstack",
+    "deploy": "manual",
+    "services": [
+      { "name": "frontend", "port": 8081, "type": "frontend", "status": "up" },
+      { "name": "backend", "port": 8080, "type": "backend", "status": "up" },
+      { "name": "mysql", "port": 3306, "type": "db", "status": "up" },
+      { "name": "redis", "port": 6379, "type": "db", "status": "down" }
+    ],
+    "url": "http://localhost:8081"
+  },
+  "imported_from_build_state": false,
+  "phase": "done",
+  "mode": "full",
+  "release_status": "ready",
+  "started_at": "2026-04-20T14:00:00.000Z",
+  "loops": [
+    { "name": "认证闭环", "status": "pass", "steps": [
+      { "seq": 1, "desc": "注册新用户", "status": "pass" },
+      { "seq": 2, "desc": "登录验证", "status": "pass" },
+      { "seq": 3, "desc": "验证身份", "status": "pass" },
+      { "seq": 4, "desc": "登出", "status": "pass" }
+    ]},
+    { "name": "选举管理闭环（管理员）", "status": "pass", "steps": [
+      { "seq": 1, "desc": "管理员登录", "status": "pass" },
+      { "seq": 2, "desc": "创建选举", "status": "pass" },
+      { "seq": 3, "desc": "编辑选举", "status": "pass" },
+      { "seq": 4, "desc": "变更状态", "status": "pass" },
+      { "seq": 5, "desc": "删除选举", "status": "pass" }
+    ]},
+    { "name": "候选人申请闭环（跨角色）", "status": "pass", "steps": [
+      { "seq": 1, "role": "student", "desc": "学生申请候选人", "status": "pass" },
+      { "seq": 2, "role": "admin", "desc": "管理员审核通过", "status": "pass" },
+      { "seq": 3, "role": "student", "desc": "学生查看审核结果", "status": "pass" }
+    ]},
+    { "name": "投票闭环", "status": "pass", "steps": [
+      { "seq": 1, "desc": "查看进行中选举", "status": "pass" },
+      { "seq": 2, "desc": "查看候选人", "status": "pass" },
+      { "seq": 3, "desc": "提交投票", "status": "pass" },
+      { "seq": 4, "desc": "查看投票结果", "status": "pass" }
+    ]}
+  ],
+  "branches": [
+    { "name": "登录注册", "branch_id": "auth", "status": "done", "routes": ["/login", "/register"], "depth_completed": { "p0": true }, "critical_branch": true, "twigs": [
+      { "desc": "页面静态内容完整性", "type": "visual", "layer": "gate", "status": "pass" },
+      { "desc": "空表单提交显示验证错误", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "管理员登录跳转仪表盘", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "学生登录跳转首页", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "未授权访问重定向登录页", "type": "security", "layer": "gate", "depth": "p0", "status": "pass" }
+    ]},
+    { "name": "用户选举列表", "branch_id": "user_elections", "status": "done", "routes": ["/elections"], "depth_completed": { "p0": true }, "critical_branch": true, "twigs": [
+      { "desc": "选举列表正确显示数据", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "状态标签正确显示", "type": "visual", "layer": "gate", "status": "pass" },
+      { "desc": "投票中选举显示投票按钮", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "已结束选举显示查看结果按钮", "type": "functional", "layer": "gate", "status": "pass" }
+    ]},
+    { "name": "用户投票", "branch_id": "user_vote", "status": "done", "routes": ["/vote"], "depth_completed": { "p0": true }, "critical_branch": true, "twigs": [
+      { "desc": "无选举ID时显示引导信息", "type": "visual", "layer": "gate", "status": "fixed" },
+      { "desc": "候选人不属于选举时拒绝投票", "type": "security", "layer": "gate", "depth": "p0", "status": "fixed" }
+    ]},
+    { "name": "管理员选举管理", "branch_id": "admin_elections", "status": "done", "routes": ["/admin/elections"], "depth_completed": { "p0": true }, "critical_branch": true, "twigs": [
+      { "desc": "选举列表正确显示", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "创建选举对话框打开", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "创建表单验证", "type": "boundary", "layer": "gate", "status": "fixed" },
+      { "desc": "搜索功能", "type": "functional", "layer": "sweep", "status": "pass" }
+    ]},
+    { "name": "管理员用户管理", "branch_id": "admin_users", "status": "done", "routes": ["/admin/users"], "depth_completed": { "p0": true }, "critical_branch": true, "twigs": [
+      { "desc": "用户列表正确显示", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "角色筛选功能", "type": "functional", "layer": "sweep", "status": "pass" },
+      { "desc": "新增用户表单验证", "type": "boundary", "layer": "gate", "status": "fixed" },
+      { "desc": "禁用/启用用户", "type": "functional", "layer": "gate", "status": "pass" }
+    ]},
+    { "name": "管理员候选人管理", "branch_id": "admin_candidates", "status": "done", "routes": ["/admin/candidates"], "depth_completed": { "p0": true }, "critical_branch": true, "twigs": [
+      { "desc": "候选人列表正确显示", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "按选举筛选功能", "type": "functional", "layer": "sweep", "status": "pass" }
+    ]},
+    { "name": "用户首页", "branch_id": "user_home", "status": "done", "routes": ["/home"], "depth_completed": { "p0": true }, "twigs": [
+      { "desc": "欢迎信息和统计卡片显示", "type": "visual", "layer": "gate", "status": "pass" },
+      { "desc": "快捷操作按钮可用", "type": "functional", "layer": "gate", "status": "pass" }
+    ]},
+    { "name": "用户候选人", "branch_id": "user_candidates", "status": "done", "routes": ["/candidates"], "depth_completed": { "p0": true }, "twigs": [
+      { "desc": "候选人卡片列表显示", "type": "visual", "layer": "gate", "status": "pass" }
+    ]},
+    { "name": "用户投票结果", "branch_id": "user_results", "status": "done", "routes": ["/results"], "depth_completed": { "p0": true }, "twigs": [
+      { "desc": "选举选择器和提示信息", "type": "visual", "layer": "gate", "status": "pass" }
+    ]},
+    { "name": "用户我的申请", "branch_id": "user_applications", "status": "done", "routes": ["/my-applications"], "depth_completed": { "p0": true }, "twigs": [
+      { "desc": "申请记录列表显示", "type": "functional", "layer": "gate", "status": "pass" },
+      { "desc": "申请时间格式化显示", "type": "visual", "layer": "sweep", "status": "fixed" }
+    ]},
+    { "name": "管理员仪表盘", "branch_id": "admin_dashboard", "status": "done", "routes": ["/admin/dashboard"], "depth_completed": { "p0": true }, "twigs": [
+      { "desc": "统计卡片数据正确", "type": "visual", "layer": "gate", "status": "pass" },
+      { "desc": "图表区域渲染", "type": "visual", "layer": "gate", "status": "pass" }
+    ]},
+    { "name": "管理员数据统计", "branch_id": "admin_statistics", "status": "done", "routes": ["/admin/statistics"], "depth_completed": { "p0": true }, "twigs": [
+      { "desc": "统计概览和选举选择器", "type": "visual", "layer": "gate", "status": "pass" }
+    ]},
+    { "name": "用户个人中心", "branch_id": "user_profile", "status": "skip", "routes": ["/profile"], "depth_completed": { "p0": false }, "twigs": [
+      { "desc": "个人中心页面", "type": "functional", "layer": "gate", "status": "skip", "error": "Route not found in navigation" }
+    ]}
+  ],
+  "results": { "pass": 30, "fail": 0, "skip": 1, "fixed": 5, "gated_skip": 0 },
+  "api_tests": {
+    "total": 26,
+    "pass": 23,
+    "fail": 1,
+    "skip": 2,
+    "endpoints_tested": [
+      "/api/auth/register", "/api/auth/login",
+      "/api/election/list", "/api/election/{id}",
+      "/api/candidate/list", "/api/candidate/apply",
+      "/api/vote/submit", "/api/vote/result/{electionId}", "/api/vote/my", "/api/vote/count",
+      "/api/admin/user/list", "/api/admin/user/create", "/api/admin/user/reset-password",
+      "/api/admin/user/toggle-status/{id}",
+      "/api/admin/election/list", "/api/admin/election/create",
+      "/api/admin/election/update", "/api/admin/election/{id}",
+      "/api/admin/election/change-status",
+      "/api/admin/candidate/list", "/api/admin/candidate/review", "/api/admin/candidate/{id}",
+      "/api/admin/statistics/dashboard", "/api/admin/statistics/election/{electionId}"
+    ],
+    "failures": [
+      { "endpoint": "/api/vote/submit", "issue": "No validation that candidate belongs to election - FIXED", "severity": "high" }
+    ]
+  },
+  "artifacts": {
+    "e2e_specs": ["tests/e2e/auth.spec.js", "tests/e2e/admin-elections.spec.js"],
+    "api_tests": ["tests/api/api-test.sh"],
+    "smoke_script": "scripts/smoke-test.sh",
+    "playwright_config": "",
+    "generated_at": "2026-04-20T06:30:00.000Z"
+  },
+  "next_action": { "type": "done", "context_hint": "autotest full completed" }
+}

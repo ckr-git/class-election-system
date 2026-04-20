@@ -76,6 +76,7 @@
 <script>
 import { getElectionList } from '@/api/election'
 import { applyCandidate } from '@/api/candidate'
+import { formatTime } from '@/utils/format'
 
 export default {
   name: 'Elections',
@@ -145,10 +146,7 @@ export default {
     viewResult(election) {
       this.$router.push(`/results?electionId=${election.id}`)
     },
-    formatTime(time) {
-      if (!time) return ''
-      return time.replace('T', ' ').substring(0, 16)
-    }
+    formatTime
   }
 }
 </script>

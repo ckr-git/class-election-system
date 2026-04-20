@@ -59,18 +59,18 @@
 
     <el-dialog :title="isEdit ? '编辑选举' : '创建选举'" :visible.sync="dialogVisible" width="500px"
       @close="resetForm">
-      <el-form :model="form" label-width="100px">
-        <el-form-item label="选举标题">
+      <el-form :model="form" :rules="formRules" ref="electionForm" label-width="100px">
+        <el-form-item label="选举标题" prop="title">
           <el-input v-model="form.title" />
         </el-form-item>
-        <el-form-item label="选举描述">
+        <el-form-item label="选举描述" prop="description">
           <el-input v-model="form.description" type="textarea" />
         </el-form-item>
-        <el-form-item label="报名时间">
+        <el-form-item label="报名时间" prop="applyTime">
           <el-date-picker v-model="form.applyTime" type="datetimerange"
             start-placeholder="开始" end-placeholder="结束" />
         </el-form-item>
-        <el-form-item label="投票时间">
+        <el-form-item label="投票时间" prop="voteTime">
           <el-date-picker v-model="form.voteTime" type="datetimerange"
             start-placeholder="开始" end-placeholder="结束" />
         </el-form-item>
@@ -88,6 +88,7 @@
 
 <script>
 import { getAdminElectionList, createElection, updateElection, changeElectionStatus, deleteElection } from '@/api/admin'
+import { formatTime } from '@/utils/format'
 
 export default {
   name: 'AdminElections',
@@ -99,7 +100,13 @@ export default {
       dialogVisible: false,
       isEdit: false,
       editId: null,
-      form: { title: '', description: '', applyTime: [], voteTime: [], voteLimit: 1 }
+      form: { title: '', description: '', applyTime: [], voteTime: [], voteLimit: 1 },
+      formRules: {
+        title: [{ required: true, message: '请输入选举标题', trigger: 'blur' }],
+        description: [{ required: true, message: '请输入选举描述', trigger: 'blur' }],
+        applyTime: [{ required: true, message: '请选择报名时间', trigger: 'change' }],
+        voteTime: [{ required: true, message: '请选择投票时间', trigger: 'change' }]
+      }
     }
   },
   mounted() {
@@ -140,6 +147,8 @@ export default {
       this.dialogVisible = true
     },
     async handleSave() {
+      const valid = await this.$refs.electionForm.validate().catch(() => false)
+      if (!valid) return
       const data = {
         title: this.form.title,
         description: this.form.description,
@@ -181,10 +190,7 @@ export default {
       this.$message.success('删除成功')
       this.loadElections()
     },
-    formatTime(time) {
-      if (!time) return ''
-      return time.replace('T', ' ').substring(0, 16)
-    }
+    formatTime
   }
 }
 </script>

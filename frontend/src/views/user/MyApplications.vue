@@ -22,7 +22,9 @@
             <span v-else style="color: #C0C4CC;">暂无</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="申请时间" width="160" />
+        <el-table-column prop="createTime" label="申请时间" width="160">
+          <template slot-scope="scope">{{ formatTime(scope.row.createTime) }}</template>
+        </el-table-column>
       </el-table>
 
       <div v-if="applications.length === 0 && !loading" class="empty-tip">
@@ -35,6 +37,7 @@
 
 <script>
 import { getCandidateList } from '@/api/candidate'
+import { formatTime } from '@/utils/format'
 
 export default {
   name: 'MyApplications',
@@ -48,6 +51,7 @@ export default {
     this.loadApplications()
   },
   methods: {
+    formatTime,
     async loadApplications() {
       this.loading = true
       try {

@@ -25,13 +25,6 @@ export function updateUser(data) {
   })
 }
 
-export function deleteUser(id) {
-  return request({
-    url: `/admin/user/${id}`,
-    method: 'delete'
-  })
-}
-
 export function resetPassword(data) {
   return request({
     url: '/admin/user/reset-password',

@@ -61,14 +61,14 @@
 
     <!-- 新增/编辑对话框 -->
     <el-dialog :visible.sync="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="500px" @close="resetForm">
-      <el-form :model="form" label-width="80px">
-        <el-form-item label="学号">
+      <el-form :model="form" :rules="formRules" ref="userForm" label-width="80px">
+        <el-form-item label="学号" prop="username">
           <el-input v-model="form.username" :disabled="isEdit"></el-input>
         </el-form-item>
-        <el-form-item label="姓名">
+        <el-form-item label="姓名" prop="nickname">
           <el-input v-model="form.nickname"></el-input>
         </el-form-item>
-        <el-form-item label="密码" v-if="!isEdit">
+        <el-form-item label="密码" v-if="!isEdit" prop="password">
           <el-input v-model="form.password" type="password"></el-input>
         </el-form-item>
         <el-form-item label="角色">
@@ -115,6 +115,7 @@
 
 <script>
 import { getUserList, createUser, updateUser, resetPassword, toggleUserStatus, importUsers } from '@/api/admin'
+import { formatTime } from '@/utils/format'
 
 export default {
   name: 'Users',
@@ -127,6 +128,11 @@ export default {
       searchKeyword: '',
       searchRole: '',
       form: { username: '', nickname: '', password: '', role: 'STUDENT' },
+      formRules: {
+        username: [{ required: true, message: '请输入学号', trigger: 'blur' }],
+        nickname: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+        password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+      },
       importDialogVisible: false,
       importFile: null,
       importResult: null,
@@ -172,6 +178,8 @@ export default {
       this.isEdit = false
     },
     async handleSave() {
+      const valid = await this.$refs.userForm.validate().catch(() => false)
+      if (!valid) return
       try {
         if (this.isEdit) {
           const data = { id: this.form.id, nickname: this.form.nickname, role: this.form.role }
@@ -224,10 +232,7 @@ export default {
         this.importing = false
       }
     },
-    formatTime(time) {
-      if (!time) return ''
-      return time.replace('T', ' ').substring(0, 16)
-    }
+    formatTime
   }
 }
 </script>

@@ -18,10 +18,3 @@ export function login(data) {
   })
 }
 
-// 用户登出
-export function logout() {
-  return request({
-    url: '/auth/logout',
-    method: 'post'
-  })
-}

@@ -18,10 +18,3 @@ export function getCandidateList(params) {
   })
 }
 
-// 获取候选人详情
-export function getCandidateDetail(id) {
-  return request({
-    url: `/candidate/${id}`,
-    method: 'get'
-  })
-}

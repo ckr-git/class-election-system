@@ -53,6 +53,16 @@ public class VoteService {
             return false;
         }
 
+        // 检查候选人是否属于该选举且已通过审核
+        LambdaQueryWrapper<Candidate> candidateQuery = new LambdaQueryWrapper<>();
+        candidateQuery.eq(Candidate::getId, candidateId)
+                .eq(Candidate::getElectionId, electionId)
+                .eq(Candidate::getStatus, 1);
+        Long candidateCount = candidateMapper.selectCount(candidateQuery);
+        if (candidateCount == 0) {
+            return false;
+        }
+
         // 检查是否已经投过票
         LambdaQueryWrapper<VoteRecord> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(VoteRecord::getElectionId, electionId)
