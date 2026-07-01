@@ -205,11 +205,19 @@ export default {
     },
     async handleToggleStatus(row) {
       try {
+        const action = row.status === 1 ? '禁用' : '启用'
+        await this.$confirm(`确定${action}该用户吗？`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
         await toggleUserStatus(row.id)
         this.$message.success('操作成功')
         this.loadUsers()
       } catch (error) {
-        console.error(error)
+        if (error !== 'cancel') {
+          console.error(error)
+        }
       }
     },
     handleFileChange(file) {

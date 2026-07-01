@@ -180,9 +180,21 @@ export default {
       this.editId = null
     },
     async changeStatus(row, status) {
-      await changeElectionStatus({ electionId: row.id, status })
-      this.$message.success('状态更新成功')
-      this.loadElections()
+      const statusText = ['未开始', '报名中', '投票中', '已结束'][status]
+      try {
+        await this.$confirm(`确定将选举状态变更为"${statusText}"吗？此操作将影响用户的报名和投票。`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await changeElectionStatus({ electionId: row.id, status })
+        this.$message.success('状态更新成功')
+        this.loadElections()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error(error)
+        }
+      }
     },
     async handleDelete(row) {
       await this.$confirm('确定删除该选举?', '提示')

@@ -52,16 +52,33 @@ export default {
     userInfo() { return this.$store.state.userInfo || {} }
   },
   methods: {
-    changePassword() {
+    async changePassword() {
+      if (!this.pwdForm.oldPassword) {
+        return this.$message.error('请输入原密码')
+      }
       if (this.pwdForm.newPassword !== this.pwdForm.confirmPassword) {
         return this.$message.error('两次密码不一致')
       }
       if (this.pwdForm.newPassword.length < 6) {
         return this.$message.error('密码长度至少6位')
       }
-      this.$message.success('密码修改成功，请重新登录')
-      this.$store.commit('logout')
-      this.$router.push('/login')
+
+      try {
+        const res = await this.$http.post('/user/change-password', {
+          oldPassword: this.pwdForm.oldPassword,
+          newPassword: this.pwdForm.newPassword
+        })
+
+        if (res.data.code === 200) {
+          this.$message.success('密码修改成功，请重新登录')
+          this.$store.commit('logout')
+          this.$router.push('/login')
+        } else {
+          this.$message.error(res.data.message || '密码修改失败')
+        }
+      } catch (error) {
+        this.$message.error('密码修改失败')
+      }
     }
   }
 }
