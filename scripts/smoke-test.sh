@@ -8,8 +8,12 @@ PASS=0
 FAIL=0
 
 check() {
-  local desc="$1" url="$2" expected="$3"
-  status=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null)
+  local desc="$1" url="$2" expected="$3" token="$4"
+  if [ -n "$token" ]; then
+    status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" "$url" 2>/dev/null)
+  else
+    status=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null)
+  fi
   if [ "$status" = "$expected" ]; then
     echo "[PASS] $desc (HTTP $status)"
     PASS=$((PASS + 1))
@@ -36,9 +40,9 @@ TOKEN=$(curl -s -X POST "$BASE_URL/api/auth/login" \
 if [ -n "$TOKEN" ]; then
   echo "[PASS] Admin login successful"
   PASS=$((PASS + 1))
-  check "Admin election list" "$BASE_URL/api/admin/election/list" "200"
-  check "Admin user list" "$BASE_URL/api/admin/user/list" "200"
-  check "Dashboard stats" "$BASE_URL/api/admin/statistics/dashboard" "200"
+  check "Admin election list" "$BASE_URL/api/admin/election/list" "200" "$TOKEN"
+  check "Admin user list" "$BASE_URL/api/admin/user/list" "200" "$TOKEN"
+  check "Dashboard stats" "$BASE_URL/api/admin/statistics/dashboard" "200" "$TOKEN"
 else
   echo "[FAIL] Admin login failed"
   FAIL=$((FAIL + 1))

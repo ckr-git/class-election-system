@@ -70,7 +70,12 @@ export default {
         if (valid) {
           this.loading = true
           try {
-            await register(this.registerForm)
+            const trimmedForm = {
+              username: this.registerForm.username.trim(),
+              password: this.registerForm.password.trim(),
+              nickname: this.registerForm.nickname.trim()
+            }
+            await register(trimmedForm)
             this.$message.success('注册成功，请登录')
             this.$router.push('/login')
           } catch (error) {

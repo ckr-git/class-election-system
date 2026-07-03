@@ -59,7 +59,11 @@ export default {
         if (valid) {
           this.loading = true
           try {
-            const res = await login(this.loginForm)
+            const trimmedForm = {
+              username: this.loginForm.username.trim(),
+              password: this.loginForm.password.trim()
+            }
+            const res = await login(trimmedForm)
             this.$store.dispatch('login', res.data)
             this.$message.success('登录成功')
             
